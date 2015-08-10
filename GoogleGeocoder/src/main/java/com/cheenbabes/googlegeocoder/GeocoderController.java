@@ -12,6 +12,8 @@ import com.google.code.geocoder.model.GeocodeResponse;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -29,9 +31,10 @@ public class GeocoderController {
         Decoder decoder = new Decoder();
         final Geocoder geocoder = new Geocoder();
         GeocoderController controller = new GeocoderController();
-        List scores = controller.readDataFromCSV("cities_cum_2014csv.txt");
-        //controller.printData(scores);
+        List<BookScore> scores = controller.readDataFromCSV("cities_cum_2010csv.txt");
+        controller.printData(scores);
         controller.getAddresses(scores);
+        controller.createCSV(scores);
         //grab the data
         //convert and sanitize
         //call Google
@@ -58,7 +61,7 @@ public class GeocoderController {
 
             //sanitize city
             try {
-                score.setTemple(token[1].split(" ")[0]);
+                score.setTemple(token[1].split("\\(")[0]);
             } catch (Exception e) {
                 System.out.println("Exception at temple at rank " + score.getRank());
             }
@@ -138,9 +141,37 @@ public class GeocoderController {
                 GeocoderRequest request = new GeocoderRequestBuilder().setAddress(s.getTemple()).setLanguage("en").getGeocoderRequest();
                 GeocodeResponse response = geocoder.geocode(request);
                 s.setResponse(response);
+                s.setLatitude(response.getResults().get(0).getGeometry().getLocation().getLat().toString());
+                System.out.println("Latitude " + s.getLatitude());
+                s.setLongitude(response.getResults().get(0).getGeometry().getLocation().getLng().toString());
+                System.out.println("Longitude " + s.getLongitude());
+                System.out.println("Response status is " + response.getStatus().toString());
+                System.out.println("Sleeping for 2 seconds");
+                Thread.sleep(2000);
             } catch (Exception e) {
                 System.out.println("Exception during geocoding happened at score " + s.getTemple());
             }
         }
+    }
+
+    private void createCSV(List<BookScore> scores) throws Exception {
+        PrintWriter out = new PrintWriter(new FileWriter("final_cities2010.txt"));
+        for (BookScore s : scores) {
+            out.println(s.getRank()+ DELIMITER
+                        +s.getTemple() + DELIMITER
+                        +s.getTotalPoints() + DELIMITER
+                        +s.getPercentChange() + DELIMITER
+                        +s.getMahaBigBooks() + DELIMITER
+                        +s.getBigBooks() + DELIMITER
+                        +s.getMediumBooks() + DELIMITER
+                        +s.getSmallBooks() + DELIMITER
+                        +s.getMags() + DELIMITER
+                        +s.getBtgSubs() + DELIMITER
+                        +s.getSets() + DELIMITER
+                        +s.getLatitude() + DELIMITER
+                        +s.getLongitude() + DELIMITER);
+            out.flush();
+        }
+        out.close();
     }
 }
